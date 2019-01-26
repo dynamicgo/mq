@@ -31,9 +31,18 @@ type lambdaImpl struct {
 }
 
 // New .
-func New(ctx context.Context) Lambda {
+func New() Lambda {
 	return &lambdaImpl{
 		Logger: slf4go.Get("steam-lambda"),
+		ctx:    context.Background(),
+	}
+}
+
+// NewWithContext ...
+func NewWithContext(ctx context.Context) Lambda {
+	return &lambdaImpl{
+		Logger: slf4go.Get("steam-lambda"),
+		ctx:    ctx,
 	}
 }
 
