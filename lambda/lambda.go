@@ -168,7 +168,13 @@ func (lambda *lambdaImpl) recvLoop() {
 }
 
 func (lambda *lambdaImpl) handleRecord(record mq.Record) {
+	for !lambda.tryOnce(record) {
+		lambda.DebugF("retry handle record %s", string(record.Key()))
+		time.Sleep(lambda.backoff)
+	}
+}
 
+func (lambda *lambdaImpl) tryOnce(record mq.Record) bool {
 	lambda.DebugF("execute record %s", string(record.Key()))
 
 	value := reflect.New(lambda.chainF[0].In.Elem())
@@ -177,7 +183,7 @@ func (lambda *lambdaImpl) handleRecord(record mq.Record) {
 
 	if err != nil {
 		lambda.ErrorF("decode input record %s error: %s", string(record.Value()), err)
-		return
+		return true
 	}
 
 	for _, f := range lambda.chainF {
@@ -185,8 +191,8 @@ func (lambda *lambdaImpl) handleRecord(record mq.Record) {
 		returns := f.funcValue.Call([]reflect.Value{value})
 
 		if !returns[1].IsNil() {
-			lambda.ErrorF("lambda execute err: %s", err)
-			return
+			lambda.ErrorF("lambda execute err: %s", returns[1].Interface())
+			return false
 		}
 
 		value = returns[0]
@@ -194,7 +200,7 @@ func (lambda *lambdaImpl) handleRecord(record mq.Record) {
 
 	if lambda.sink == nil {
 		lambda.DebugF("execute record %s -- complete", string(record.Key()))
-		return
+		return true
 	}
 
 	lambda.DebugF("execute record %s -- write result to sink", string(record.Key()))
@@ -203,20 +209,22 @@ func (lambda *lambdaImpl) handleRecord(record mq.Record) {
 
 	if err != nil {
 		lambda.DebugF("execute record %s -- write result to sink err: %s", string(record.Key()), err)
-		return
+		return false
 	}
 
 	newRecord, err := lambda.sink.Record(record.Key(), buff)
 
 	if err != nil {
 		lambda.DebugF("execute record %s -- write result to sink err: %s", string(record.Key()), err)
-		return
+		return false
 	}
 
 	if err := lambda.sink.Send(newRecord); err != nil {
 		lambda.DebugF("execute record %s -- write result to sink err: %s", string(record.Key()), err)
-		return
+		return false
 	}
 
 	lambda.DebugF("execute record %s -- success", string(record.Key()))
+
+	return true
 }
