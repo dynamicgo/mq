@@ -50,9 +50,7 @@ func newLambdaFunc(f interface{}) (*lambdaFunc, error) {
 		return nil, xerrors.Wrapf(ErrParam, "lambda handle type error, expect func(arg)(ret,error) ")
 	}
 
-	var err error
-
-	if !funcType.Out(1).Implements(reflect.TypeOf(err)) {
+	if !funcType.Out(1).Implements(reflect.TypeOf((*error)(nil)).Elem()) {
 		return nil, xerrors.Wrapf(ErrParam, "lambda handle type error, expect func(arg)(ret,error) ")
 	}
 
