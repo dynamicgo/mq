@@ -177,9 +177,9 @@ func (lambda *lambdaImpl) handleRecord(record mq.Record) {
 func (lambda *lambdaImpl) tryOnce(record mq.Record) bool {
 	lambda.DebugF("execute record %s", string(record.Key()))
 
-	value := reflect.New(lambda.chainF[0].In.Elem())
+	value := reflect.New(lambda.chainF[0].In)
 
-	err := json.Unmarshal(record.Value(), value.Addr().Interface())
+	err := json.Unmarshal(record.Value(), value.Interface())
 
 	if err != nil {
 		lambda.ErrorF("decode input record %s error: %s", string(record.Value()), err)
