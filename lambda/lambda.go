@@ -171,7 +171,7 @@ func (lambda *lambdaImpl) handleRecord(record mq.Record) {
 
 	lambda.DebugF("execute record %s", string(record.Key()))
 
-	value := reflect.New(lambda.chainF[0].In)
+	value := reflect.New(lambda.chainF[0].In.Elem())
 
 	err := json.Unmarshal(record.Value(), value.Addr().Interface())
 
