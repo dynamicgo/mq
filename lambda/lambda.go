@@ -196,6 +196,11 @@ func (lambda *lambdaImpl) tryOnce(record mq.Record) bool {
 		}
 
 		value = returns[0]
+
+		if value.IsNil() {
+			lambda.DebugF("execute record %s -- complete", string(record.Key()))
+			return true
+		}
 	}
 
 	if lambda.sink == nil {
